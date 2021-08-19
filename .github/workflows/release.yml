@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - name: Get version
-      uses: jannemattila/get-version-from-tag
+      uses: jannemattila/get-version-from-tag@main
 
     - name: Display version
       run: |
