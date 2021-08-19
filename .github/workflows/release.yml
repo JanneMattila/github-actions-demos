@@ -1,0 +1,21 @@
+name: CD
+
+on:
+  release:
+    types:
+      - edited
+      - released
+
+jobs:
+  release:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Get version
+      uses: jannemattila/get-version-from-tag
+
+    - name: Display version
+      run: |
+        VERSION=$(echo "${{ steps.get_version.outputs.version }}")
+        echo $VERSION
