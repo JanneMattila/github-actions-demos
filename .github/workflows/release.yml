@@ -1,4 +1,4 @@
-name: CD
+name: Release
 
 on:
   release:
@@ -7,12 +7,13 @@ on:
       - released
 
 jobs:
-  release:
+  Release:
 
     runs-on: ubuntu-latest
 
     steps:
-    - name: Get version
+    - id: get_version
+      name: Get version
       uses: jannemattila/get-version-from-tag@main
 
     - name: Display version
