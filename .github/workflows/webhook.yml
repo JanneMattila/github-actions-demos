@@ -2,6 +2,7 @@ name: Webhook
 
 on:
   repository_dispatch:
+    types: [app_deployed]
     # Inputs the workflow accepts.
     inputs:
       name:

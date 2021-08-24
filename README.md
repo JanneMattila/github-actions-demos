@@ -1,1 +1,3 @@
-# github-actions-demos
+# GitHub Actions demos
+
+Collection of different GitHub Actions demos
