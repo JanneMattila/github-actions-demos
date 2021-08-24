@@ -1,0 +1,13 @@
+name: External
+
+on:
+  repository_dispatch:
+    types: [app_deployed]
+
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Got external greeting
+      run: echo "Hello external ${{ github.event.client_payload.name }}"
