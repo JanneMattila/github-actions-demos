@@ -14,7 +14,8 @@ $uri = "https://api.github.com/repos/jannemattila/github-actions-demos/dispatche
 $body = ConvertTo-Json $payload
 $body
 
-$response = Invoke-RestMethod -Body $body -Headers $headers -ContentType "application/json" -Method "POST" -DisableKeepAlive -Uri $uri
-$response
+# Get yourself Personal Access Token with "repo" 
+$token = ConvertTo-SecureString -AsPlainText "<a_guid_like_magic_string>"
 
-# Invoke-RestMethod: {"message":"Not Found","documentation_url":"https://docs.github.com/rest/reference/repos#create-a-repository-dispatch-event"}
+$response = Invoke-RestMethod -Authentication Bearer -Token $token -Body $body -Headers $headers -ContentType "application/json" -Method "POST" -DisableKeepAlive -Uri $uri
+$response
