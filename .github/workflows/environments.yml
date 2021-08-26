@@ -1,0 +1,44 @@
+name: Environments
+
+on:
+  workflow_dispatch:
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build script
+        run: |
+          cd ..
+          pwd
+          ls -alF
+          tree
+
+  Development:
+    environment: dev
+    needs: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment script
+        run: |
+          echo "Deploying to development"
+
+  Test:
+    environment: test
+    needs: Development
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment script
+        run: |
+          echo "Deploying to test"
+
+  Production:
+    environment: production
+    needs: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment script
+        run: |
+          echo "Deploying to production"
