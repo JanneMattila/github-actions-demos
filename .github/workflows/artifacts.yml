@@ -28,5 +28,5 @@ jobs:
           name: yamls
       - run: |
           pwd
-          ls -lF
-          tree
+          ls -alF
+          tree -a
