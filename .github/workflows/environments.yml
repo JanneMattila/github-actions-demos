@@ -37,6 +37,7 @@ jobs:
   Production:
     environment: production
     needs: Test
+    if: startsWith(github.ref, 'refs/heads/releases/')
     runs-on: ubuntu-latest
     steps:
       - name: Deployment script
