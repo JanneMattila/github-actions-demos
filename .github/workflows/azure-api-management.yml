@@ -1,4 +1,4 @@
-name: "APIM Developer Portal Export-Import"
+name: "Azure API Management Developer Portal Export-Import"
 on:
   workflow_dispatch:
 
