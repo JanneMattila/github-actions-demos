@@ -34,3 +34,13 @@ jobs:
         uses: actions/download-artifact@v2.0.10
         with:
           name: portal
+          path: portal
+
+      - id: apim-import
+        name: Import developer portal content
+        uses: jannemattila/azure-api-management-developer-portal-action@main
+        with:
+          apimName: ${{ secrets.APIM }} # Your Azure API Management instance name
+          resourceGroup: ${{ secrets.APIM_RG }} # Name of the resource group
+          direction: Import # Export or Import
+          folder: portal
