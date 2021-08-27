@@ -1,0 +1,36 @@
+name: "APIM Developer Portal Export-Import"
+on:
+  workflow_dispatch:
+
+jobs:
+  Export:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: azure/login@v1
+      with:
+        creds: '${{ secrets.AZURE_CREDENTIALS }}'
+        enable-AzPSSession: true
+        
+    - id: apim-export
+      name: Export developer portal content
+      uses: jannemattila/azure-api-management-developer-portal-action@main
+      with:
+        apimName: ${{ secrets.APIM }} # Your Azure API Management instance name
+        resourceGroup: ${{ secrets.APIM_RG }} # Name of the resource group
+        direction: Export # Export or Import
+        
+    - name: Upload developer portal content as artifact
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        name: portal
+        path: ${{ steps.apim-export.outputs.folder }}
+        if-no-files-found: error
+
+  Release:
+    runs-on: ubuntu-latest
+    needs: Export
+    steps:
+      - name: Download developer portal content from artifact
+        uses: actions/download-artifact@v2.0.10
+        with:
+          name: portal
