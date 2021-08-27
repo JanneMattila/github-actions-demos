@@ -36,6 +36,11 @@ jobs:
           name: portal
           path: portal
 
+      - uses: azure/login@v1
+        with:
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
+          enable-AzPSSession: true
+
       - id: apim-import
         name: Import developer portal content
         uses: jannemattila/azure-api-management-developer-portal-action@main
