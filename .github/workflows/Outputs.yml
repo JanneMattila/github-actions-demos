@@ -1,0 +1,21 @@
+name: Outputs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  job1:
+    runs-on: ubuntu-latest
+    outputs:
+      url: ${{ steps.step1.outputs.webApp }}
+    steps:
+      - id: step1
+        name: Send web app name to next job
+        run: echo "::set-output name=webApp::contoso0001"
+
+  job2:
+    runs-on: ubuntu-latest
+    needs: job1
+    steps:
+      - run: echo "Web app: ${{ needs.job1.outputs.url }}"
+  
