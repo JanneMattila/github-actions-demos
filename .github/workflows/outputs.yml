@@ -17,5 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: job1
     steps:
-      - run: echo "Web app: ${{ needs.job1.outputs.url }}"
-  
+      - run: echo "Web app is $WEB_APP"
+        env:
+          WEB_APP: ${{ needs.job1.outputs.url }}
