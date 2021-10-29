@@ -1,5 +1,5 @@
 # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-azure
-name: Federated identity
+name: 'Federated identity'
 
 on:
   workflow_dispatch:
@@ -12,25 +12,26 @@ jobs:
       - name: Deployment script
         run: |
           echo "Deploying to development"
-    - name: Installing CLI-beta for OpenID Connect
-      run: |
-        cd ../..
-        CWD="$(pwd)"
-        python3 -m venv oidc-venv
-        . oidc-venv/bin/activate
-        echo "activated environment"
-        python3 -m pip install -q --upgrade pip
-        echo "started installing cli beta"
-        pip install -q --extra-index-url https://azcliprod.blob.core.windows.net/beta/simple/ azure-cli
-        echo "***************installed cli beta*******************"
-        echo "$CWD/oidc-venv/bin" >> $GITHUB_PATH
-        
-    - name: 'Az CLI login'
-      uses: azure/login@v1.4.0
-      with:
-        client-id: ${{ secrets.AZURE_CLIENTID }}
-        tenant-id: ${{ secrets.AZURE_TENANTID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTIONID }}
+          
+      - name: Installing CLI-beta for OpenID Connect
+        run: |
+          cd ../..
+          CWD="$(pwd)"
+          python3 -m venv oidc-venv
+          . oidc-venv/bin/activate
+          echo "activated environment"
+          python3 -m pip install -q --upgrade pip
+          echo "started installing cli beta"
+          pip install -q --extra-index-url https://azcliprod.blob.core.windows.net/beta/simple/ azure-cli
+          echo "***************installed cli beta*******************"
+          echo "$CWD/oidc-venv/bin" >> $GITHUB_PATH
+
+      - name: 'Az CLI login'
+        uses: azure/login@v1.4.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENTID }}
+          tenant-id: ${{ secrets.AZURE_TENANTID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTIONID }}
 
       - run: |
           az group list -o table
