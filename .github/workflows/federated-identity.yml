@@ -45,3 +45,7 @@ jobs:
 
       - run: |
           az group list -o table
+
+      - shell: pwsh
+        run: |
+          Get-AzResourceGroup
