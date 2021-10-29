@@ -45,4 +45,9 @@ jobs:
 
       - run: |
           az group list -o table
-          Get-AzResourceGroup
+
+      - uses: azure/powershell@v1
+        with:
+           inlineScript: |
+             Get-AzResourceGroup
+           azPSVersion: "latest"
