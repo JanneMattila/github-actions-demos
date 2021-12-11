@@ -1,0 +1,13 @@
+name: Numbers
+
+on:
+  workflow_dispatch:
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ${{ github.run_id }}
+      - run: echo ${{ github.run_number }}
+      - run: echo ${{ github.run_attempt }}
+      - run: echo ${{ github.sha }}
