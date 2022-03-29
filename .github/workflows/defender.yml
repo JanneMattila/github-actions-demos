@@ -1,4 +1,4 @@
-name: Defender workflow
+name: Defender scan
 on:
   workflow_dispatch:
     inputs:
