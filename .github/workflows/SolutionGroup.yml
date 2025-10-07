@@ -1,4 +1,5 @@
 name: Deploy Solution Group
+run-name: Deploy ${{ inputs.solution }}
 
 on:
   workflow_dispatch:
