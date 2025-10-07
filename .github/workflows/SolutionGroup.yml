@@ -46,6 +46,20 @@ jobs:
           echo "Deploying ${{ steps.parse.outputs.app_name }} from solution group ${{ steps.parse.outputs.solution_group }}"
           echo "Deploying from ref: ${{ github.ref }}"
           echo "Current commit: ${{ github.sha }}"
+          echo ""
+          echo "=========================================="
+          echo "Application Configuration:"
+          echo "=========================================="
+          
+          APP_FILE="./src/${{ steps.parse.outputs.solution_group }}-SolutionGroup/${{ steps.parse.outputs.app_name }}.md"
+          
+          if [ -f "$APP_FILE" ]; then
+            cat "$APP_FILE"
+          else
+            echo "Warning: Configuration file not found at: $APP_FILE"
+          fi
+          
+          echo "=========================================="
 
       - name: Trigger dependent workflows (optional)
         if: ${{ success() && inputs.trigger_dependent_workflows }}
