@@ -151,7 +151,7 @@ Add the new solution group to `SolutionGroups/solution-groups.json`:
         "App C": []
     },
     "DEF": {
-        "App D": ["App E", "App F"],
+        "App D": ["App E"],
         "App E": ["App F"],
         "App F": []
     },
@@ -298,7 +298,7 @@ Dependencies are defined as **one-way relationships** in `solution-groups.json`:
 ```json
 {
     "DEF": {
-        "App D": ["App E", "App F"],
+        "App D": ["App E"],
         "App E": ["App F"],
         "App F": []
     }
@@ -308,10 +308,7 @@ Dependencies are defined as **one-way relationships** in `solution-groups.json`:
 **Execution order when deploying "App D" with cascading:**
 1. Deploy App D
 2. Trigger App E (dependent of App D)
-3. Trigger App F (dependent of App D)
-4. App E also triggers App F (dependent of App E)
-
-**Note:** App F may be triggered multiple times if it's a dependency of multiple apps.
+3. Trigger App F (dependent of App E)
 
 ### Error Handling
 

@@ -9,8 +9,7 @@
     },
     "DEF": {
         "App D": [
-            "App E", 
-            "App F"
+            "App E"
         ],
         "App E": [
             "App F"
