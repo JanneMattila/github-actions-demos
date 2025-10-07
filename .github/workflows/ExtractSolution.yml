@@ -21,6 +21,11 @@ on:
         default: false
         type: boolean
 
+# Ensure only one extract workflow runs at a time to avoid git push conflicts
+concurrency:
+  group: extract-solution
+  cancel-in-progress: false
+
 permissions:
   contents: write
   actions: write
@@ -86,9 +91,44 @@ jobs:
             if git diff --staged --quiet; then
               echo "No changes to commit"
             else
-              git commit -m "Extract ${{ inputs.solution }} - Updated by ${{ github.actor }}"
-              git push
-              echo "Changes committed and pushed"
+              # Retry logic for push conflicts
+              MAX_RETRIES=5
+              RETRY_COUNT=0
+              RETRY_DELAY=5
+              
+              while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+                echo "Attempt $((RETRY_COUNT + 1)) of $MAX_RETRIES"
+                
+                # Pull latest changes to avoid conflicts
+                git pull --rebase origin ${{ github.ref_name }}
+                
+                # Re-apply our changes (may need to re-run sed if rebased)
+                TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+                USERNAME="${{ github.actor }}"
+                sed -i "1s/.*/# ${{ steps.parse.outputs.solution_group }}-SolutionGroup -> ${{ steps.parse.outputs.app_name }} - Update $TIMESTAMP by $USERNAME/" "$APP_FILE"
+                git add "$APP_FILE"
+                
+                # Commit if there are changes
+                if ! git diff --staged --quiet; then
+                  git commit -m "Extract ${{ inputs.solution }} - Updated by ${{ github.actor }}"
+                fi
+                
+                # Try to push
+                if git push; then
+                  echo "Changes committed and pushed successfully"
+                  break
+                else
+                  RETRY_COUNT=$((RETRY_COUNT + 1))
+                  if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                    echo "Push failed, waiting $RETRY_DELAY seconds before retry..."
+                    sleep $RETRY_DELAY
+                    RETRY_DELAY=$((RETRY_DELAY + 5))  # Exponential backoff
+                  else
+                    echo "Failed to push after $MAX_RETRIES attempts"
+                    exit 1
+                  fi
+                fi
+              done
             fi
           else
             echo "Skipping commit - file not found"
