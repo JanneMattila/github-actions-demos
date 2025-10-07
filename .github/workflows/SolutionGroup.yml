@@ -53,7 +53,7 @@ jobs:
           echo "Application Configuration:"
           echo "=========================================="
           
-          APP_FILE="./src/${{ steps.parse.outputs.solution_group }}-SolutionGroup/${{ steps.parse.outputs.app_name }}.md"
+          APP_FILE="./SolutionGroups/${{ steps.parse.outputs.solution_group }}-SolutionGroup/${{ steps.parse.outputs.app_name }}.md"
           
           if [ -f "$APP_FILE" ]; then
             cat "$APP_FILE"
@@ -82,7 +82,7 @@ jobs:
             console.log(`Processing dependencies for: ${solutionGroup} -> ${appName}`);
             
             // Read the solution groups mapping
-            const solutionGroups = JSON.parse(fs.readFileSync('./solution-groups.json', 'utf8'));
+            const solutionGroups = JSON.parse(fs.readFileSync('./SolutionGroups/solution-groups.json', 'utf8'));
             
             // Get dependent apps for the selected solution
             if (!solutionGroups[solutionGroup]) {
