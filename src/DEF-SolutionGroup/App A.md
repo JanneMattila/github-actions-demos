@@ -1,1 +1,1 @@
-# ABC-SolutionGroup -> App A
+# DEF-SolutionGroup -> App A
