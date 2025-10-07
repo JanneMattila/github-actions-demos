@@ -91,38 +91,37 @@ jobs:
             if git diff --staged --quiet; then
               echo "No changes to commit"
             else
+              # Commit the changes first
+              git commit -m "Extract ${{ inputs.solution }} - Updated by ${{ github.actor }}"
+              
               # Retry logic for push conflicts
               MAX_RETRIES=5
               RETRY_COUNT=0
               RETRY_DELAY=5
               
               while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-                echo "Attempt $((RETRY_COUNT + 1)) of $MAX_RETRIES"
-                
-                # Pull latest changes to avoid conflicts
-                git pull --rebase origin ${{ github.ref_name }}
-                
-                # Re-apply our changes (may need to re-run sed if rebased)
-                TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-                USERNAME="${{ github.actor }}"
-                sed -i "1s/.*/# ${{ steps.parse.outputs.solution_group }}-SolutionGroup -> ${{ steps.parse.outputs.app_name }} - Update $TIMESTAMP by $USERNAME/" "$APP_FILE"
-                git add "$APP_FILE"
-                
-                # Commit if there are changes
-                if ! git diff --staged --quiet; then
-                  git commit -m "Extract ${{ inputs.solution }} - Updated by ${{ github.actor }}"
-                fi
+                echo "Attempt $((RETRY_COUNT + 1)) of $MAX_RETRIES to push changes"
                 
                 # Try to push
                 if git push; then
-                  echo "Changes committed and pushed successfully"
+                  echo "Changes pushed successfully"
                   break
                 else
                   RETRY_COUNT=$((RETRY_COUNT + 1))
                   if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                    echo "Push failed, waiting $RETRY_DELAY seconds before retry..."
-                    sleep $RETRY_DELAY
-                    RETRY_DELAY=$((RETRY_DELAY + 5))  # Exponential backoff
+                    echo "Push failed, pulling latest changes and retrying..."
+                    
+                    # Pull with rebase to get latest changes
+                    if git pull --rebase origin ${{ github.ref_name }}; then
+                      echo "Rebased successfully, waiting $RETRY_DELAY seconds before retry..."
+                      sleep $RETRY_DELAY
+                      RETRY_DELAY=$((RETRY_DELAY + 5))  # Exponential backoff
+                    else
+                      echo "Rebase failed, trying to abort and continue..."
+                      git rebase --abort || true
+                      sleep $RETRY_DELAY
+                      RETRY_DELAY=$((RETRY_DELAY + 5))
+                    fi
                   else
                     echo "Failed to push after $MAX_RETRIES attempts"
                     exit 1
