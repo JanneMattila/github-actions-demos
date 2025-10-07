@@ -26,6 +26,7 @@ permissions:
 
 jobs:
   deploy-solution:
+    name: Deploy ${{ inputs.solution }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out
