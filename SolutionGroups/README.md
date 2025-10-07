@@ -85,7 +85,20 @@ This means:
 
 Here are screenshots of the workflows in action:
 
-Initiate deployment of App A:
+Initiate deployment of App A which has the following configuration:
+
+```json
+{
+  "ABC": {
+    "App A": [
+      "App B", 
+      "App C"
+    ],
+    "App B": [],
+    "App C": []
+  }
+}
+```
 
 ![Initiate deployment of App A](./images/deploy-workflow1.png)
 
@@ -131,7 +144,21 @@ Here is the end result after all deployments are done:
 
 Here are screenshots of the workflows in action:
 
-Initiate extraction of App D:
+Initiate extraction of App D which has the following configuration:
+
+```json
+{
+  "DEF": {
+    "App D": [
+      "App E"
+    ],
+    "App E": [
+      "App F"
+    ],
+    "App F": []
+  }
+}
+```
 
 ![Initiate extraction of App D](./images/run-workflow1.png)
 
