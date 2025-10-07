@@ -1,0 +1,20 @@
+{
+    "ABC": {
+        "App A": [
+            "App B", 
+            "App C"
+        ],
+        "App B": [],
+        "App C": []
+    },
+    "DEF": {
+        "App D": [
+            "App E", 
+            "App F"
+        ],
+        "App E": [
+            "App F"
+        ],
+        "App F": []
+    }
+}
