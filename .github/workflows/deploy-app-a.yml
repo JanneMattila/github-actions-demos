@@ -1,0 +1,70 @@
+name: Deploy App A
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch or tag to deploy'
+        required: false
+        default: 'main'
+        type: string
+      trigger_dependent_workflows:
+        description: 'Trigger dependent workflows?'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  deploy-app-a:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5.0.0
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Deploy App A
+        run: |
+          echo "Deploying App A from ref: ${{ inputs.ref }}"
+
+      - name: Trigger dependent workflows (optional)
+        if: ${{ success() && inputs.trigger_dependent_workflows == 'true' }}
+        uses: actions/github-script@v7
+        env:
+          TARGET_REF: ${{ inputs.ref }}
+          TRIGGER_DEPENDENT_WORKFLOWS: ${{ inputs.trigger_dependent_workflows }}
+        with:
+          script: |
+            // List of dependent workflow file names
+            const dependentWorkflows = [
+              'deploy-app-b.yml'
+              'deploy-app-c.yml',
+            ];
+
+            // Process each dependent workflow in a loop
+            for (const workflowFile of dependentWorkflows) {
+              console.log(`Triggering workflow: ${workflowFile}`);
+              
+              try {
+                await github.rest.actions.createWorkflowDispatch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: workflowFile,
+                  ref: process.env.TARGET_REF,
+                  inputs: {
+                    ref: process.env.TARGET_REF,
+                    // workflow_dispatch inputs are strings; send "true"/"false"
+                    trigger_dependent_workflows: String(process.env.TRIGGER_DEPENDENT_WORKFLOWS)
+                  }
+                });
+                
+                console.log(`Successfully triggered: ${workflowFile}`);
+              } catch (error) {
+                console.error(`Failed to trigger ${workflowFile}:`, error.message);
+                // Continue with next workflow instead of failing completely
+              }
+            }
