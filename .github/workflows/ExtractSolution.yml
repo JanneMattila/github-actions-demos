@@ -21,11 +21,6 @@ on:
         default: false
         type: boolean
 
-# Ensure only one extract workflow runs at a time to avoid git push conflicts
-concurrency:
-  group: extract-solution
-  cancel-in-progress: false
-
 permissions:
   contents: write
   actions: write
