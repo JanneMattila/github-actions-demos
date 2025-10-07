@@ -99,9 +99,8 @@ jobs:
             const dependentApps = solutionGroups[solutionGroup][appName];
             
             if (dependentApps.length === 0) {
-              const errorMsg = `No dependent workflows found for ${appName}. Cannot cascade with trigger_dependent_workflows enabled.`;
-              console.error(errorMsg);
-              throw new Error(errorMsg);
+              console.log(`No dependent workflows to trigger for ${appName} - this app has no dependencies defined.`);
+              return;
             }
             
             console.log(`Found ${dependentApps.length} dependent app(s): ${dependentApps.join(', ')}`);

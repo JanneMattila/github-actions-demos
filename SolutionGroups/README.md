@@ -317,9 +317,11 @@ Dependencies are defined as **one-way relationships** in `solution-groups.json`:
 
 Both workflows will **fail** if:
 1. The application's `.md` configuration file is not found
-2. "Trigger dependent workflows" is enabled but the app has no dependencies defined
 
-This ensures that configuration issues are caught early.
+Both workflows will **succeed** with informational messages if:
+1. "Trigger dependent workflows" is enabled but the app has no dependencies defined (this is normal for leaf nodes in the dependency tree)
+
+This ensures that configuration issues are caught early while allowing flexibility in workflow triggering.
 
 ## Best Practices
 
@@ -350,8 +352,10 @@ This ensures that configuration issues are caught early.
 - Ensure file name matches exactly with `solution-groups.json` (including spaces)
 
 ### Workflow fails with "No dependent workflows found"
-- This occurs when "Trigger dependent workflows" is checked but the app has no dependencies
-- Either uncheck the option or add dependencies in `solution-groups.json`
+- This is actually not an error - it's an informational message
+- Occurs when "Trigger dependent workflows" is checked but the app has no dependencies
+- The workflow will succeed; this is normal for apps like "App C" or "App F" that are leaf nodes
+- You can safely check "Trigger dependent workflows" for any app without worrying about this
 
 ### New app doesn't appear in dropdown
 - Ensure you updated **both** workflow files (`.github/workflows/SolutionGroup.yml` and `ExtractSolution.yml`)
