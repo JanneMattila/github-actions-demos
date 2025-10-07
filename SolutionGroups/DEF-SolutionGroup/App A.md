@@ -1,1 +1,0 @@
-# DEF-SolutionGroup -> App A
