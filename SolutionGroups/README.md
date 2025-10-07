@@ -83,6 +83,25 @@ This means:
   - Automatically triggers deployment of App B
   - Automatically triggers deployment of App C
 
+Here are screenshots of the workflows in action:
+
+Initiate deployment of App A:
+
+![Initiate deployment of App A](./images/deploy-workflow1.png)
+
+App A deployment in progress:
+
+![App A deployment in progress](./images/deploy-workflow2.png)
+
+App A deployment completed:
+
+![App A deployment completed](./images/deploy-workflow3.png)
+
+It has started deployment of App B (dependent of App A) and then it will deploy App C (dependent of App A).
+Here is the end result after all deployments are done:
+
+![Deployments completed](./images/deploy-workflow4.png)
+
 ### 2. Extract Solution Workflow
 
 **File:** `.github/workflows/ExtractSolution.yml`
