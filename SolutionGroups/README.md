@@ -110,6 +110,28 @@ This means:
 - Changes are committed by `github-actions[bot]`
 - If cascading is enabled, dependent apps are also extracted
 
+Here are screenshots of the workflows in action:
+
+Initiate extraction of App D:
+
+![Initiate extraction of App D](./images/run-workflow1.png)
+
+App D extraction in progress:
+
+![App D extraction in progress](./images/run-workflow2.png)
+
+App D extraction completed:
+
+![App D extraction completed](./images/run-workflow3.png)
+
+It has started extraction of App E (dependent of App D) and then it will extract App F (dependent of App E):
+
+![App D extraction completed](./images/run-workflow4.png)
+
+Here is the end result after all extractions are done:
+
+![App D extraction completed](./images/run-workflow5.png)
+
 ## Adding a New Solution Group
 
 Follow these steps to add a new Solution Group (e.g., "GHI"):
