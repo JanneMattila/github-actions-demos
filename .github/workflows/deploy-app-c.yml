@@ -3,11 +3,6 @@ name: Deploy App C
 on:
   workflow_dispatch:
     inputs:
-      ref:
-        description: 'Branch or tag to deploy'
-        required: false
-        default: 'main'
-        type: string
       trigger_dependent_workflows:
         description: 'Trigger dependent workflows?'
         required: false
@@ -23,11 +18,9 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v5.0.0
-        with:
-          ref: ${{ inputs.ref }}
 
       - name: Deploy App C
         run: |
-          echo "Deploying App C from ref: ${{ inputs.ref }}"
+          echo "Deploying App C from ref: ${{ github.ref }}"
           echo "Current commit: ${{ github.sha }}"
           echo "Triggered by dependent workflow: ${{ inputs.trigger_dependent_workflows }}"
