@@ -67,7 +67,8 @@ jobs:
             echo "New content:"
             cat "$APP_FILE"
           else
-            echo "Warning: Configuration file not found at: $APP_FILE"
+            echo "Error: Configuration file not found at: $APP_FILE"
+            exit 1
           fi
           
           echo "=========================================="
@@ -128,8 +129,9 @@ jobs:
             const dependentApps = solutionGroups[solutionGroup][appName];
             
             if (dependentApps.length === 0) {
-              console.log(`No dependent workflows to trigger for ${appName}`);
-              return;
+              const errorMsg = `No dependent workflows found for ${appName}. Cannot cascade with trigger_dependent_workflows enabled.`;
+              console.error(errorMsg);
+              throw new Error(errorMsg);
             }
             
             console.log(`Found ${dependentApps.length} dependent app(s): ${dependentApps.join(', ')}`);
