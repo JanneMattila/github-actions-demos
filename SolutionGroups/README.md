@@ -34,7 +34,7 @@ The `solution-groups.json` file defines the dependency relationships between app
 **Structure:**
 ```json
 {
-    "SolutionGroupName": {
+    "<SolutionGroupName>": {
         "<App Name>": ["<Dependent App 1>", "<Dependent App 2>"],
         "<Another App>": []
     }
