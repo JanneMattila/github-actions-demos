@@ -17,8 +17,11 @@ jobs:
         with:
           script: |
             const count = ${{ inputs.count }};
+            
             for (let i = 1; i <= count; i++) {
               console.log(`Triggering workflow ${i} of ${count}`);
+              
+              // Trigger the workflow
               await github.rest.actions.createWorkflowDispatch({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -31,6 +34,51 @@ jobs:
                 }
               });
               
-              // Add a small delay to ensure serial execution
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              // Wait a moment for the workflow to be created
+              await new Promise(resolve => setTimeout(resolve, 5000));
+              
+              // Poll for workflow completion
+              let workflowRun = null;
+              let attempts = 0;
+              const maxAttempts = 180; // 15 minutes max wait (180 * 5 seconds)
+              
+              while (attempts < maxAttempts) {
+                // Get recent workflow runs
+                const runs = await github.rest.actions.listWorkflowRuns({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: 'Reusable.yml',
+                  per_page: 10
+                });
+                
+                // Find the most recent run (should be the one we just triggered)
+                const recentRun = runs.data.workflow_runs.find(run => 
+                  run.status === 'completed' || run.status === 'in_progress' || run.status === 'queued'
+                );
+                
+                if (recentRun && recentRun.status === 'completed') {
+                  workflowRun = recentRun;
+                  console.log(`Workflow ${i} completed with status: ${recentRun.conclusion}`);
+                  break;
+                }
+                
+                console.log(`Waiting for workflow ${i} to complete... (attempt ${attempts + 1}/${maxAttempts})`);
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                attempts++;
+              }
+              
+              // Check if workflow succeeded
+              if (!workflowRun) {
+                core.setFailed(`Workflow ${i} did not complete within the timeout period`);
+                throw new Error(`Workflow ${i} timed out`);
+              }
+              
+              if (workflowRun.conclusion !== 'success') {
+                core.setFailed(`Workflow ${i} failed with conclusion: ${workflowRun.conclusion}`);
+                throw new Error(`Workflow ${i} failed, stopping execution`);
+              }
+              
+              console.log(`Workflow ${i} succeeded, proceeding to next workflow`);
             }
+            
+            console.log(`All ${count} workflows completed successfully`);
