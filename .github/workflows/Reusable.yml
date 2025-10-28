@@ -1,0 +1,48 @@
+name: Reusable Workflow
+
+on:
+  workflow_call:
+    inputs:
+      id:
+        description: 'ID parameter'
+        required: true
+        type: string
+      name:
+        description: 'Name parameter'
+        required: true
+        type: string
+      environment:
+        description: 'Environment to deploy to'
+        required: false
+        type: string
+        default: 'Dev'
+  workflow_dispatch:
+    inputs:
+      id:
+        description: 'ID parameter'
+        required: true
+        type: string
+      name:
+        description: 'Name parameter'
+        required: true
+        type: string
+      environment:
+        description: 'Environment to deploy to'
+        required: false
+        type: choice
+        options:
+          - Dev
+          - QA
+          - Production
+        default: 'Dev'
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Echo parameters
+        run: |
+          echo "ID: ${{ inputs.id }}"
+          echo "Name: ${{ inputs.name }}"
+          echo "Environment: ${{ inputs.environment }}"

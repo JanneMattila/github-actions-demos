@@ -1,0 +1,36 @@
+name: Orchestrator Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: 'Number of times to call the reusable workflow'
+        required: true
+        type: number
+        default: 3
+
+jobs:
+  trigger-reusable-workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const count = ${{ inputs.count }};
+            for (let i = 1; i <= count; i++) {
+              console.log(`Triggering workflow ${i} of ${count}`);
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'Reusable.yml',
+                ref: 'main',
+                inputs: {
+                  id: i.toString(),
+                  name: `Item-${i}`,
+                  environment: 'Dev'
+                }
+              });
+              
+              // Add a small delay to ensure serial execution
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
