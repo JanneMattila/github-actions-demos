@@ -59,7 +59,12 @@ jobs:
                 if (recentRun && recentRun.status === 'completed') {
                   workflowRun = recentRun;
                   console.log(`Workflow ${i} completed with status: ${recentRun.conclusion}`);
+                  console.log(`View workflow run: ${recentRun.html_url}`);
                   break;
+                }
+                
+                if (recentRun && attempts === 0) {
+                  console.log(`Workflow ${i} started: ${recentRun.html_url}`);
                 }
                 
                 console.log(`Waiting for workflow ${i} to complete... (attempt ${attempts + 1}/${maxAttempts})`);
@@ -74,7 +79,7 @@ jobs:
               }
               
               if (workflowRun.conclusion !== 'success') {
-                core.setFailed(`Workflow ${i} failed with conclusion: ${workflowRun.conclusion}`);
+                core.setFailed(`Workflow ${i} failed with conclusion: ${workflowRun.conclusion}. View run: ${workflowRun.html_url}`);
                 throw new Error(`Workflow ${i} failed, stopping execution`);
               }
               
