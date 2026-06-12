@@ -6,7 +6,8 @@ permissions:
   contents: read 
   issues: read 
   pull-requests: read 
- 
+  copilot-requests: write
+
 safe-outputs: 
   create-issue: 
     title-prefix: "[repo status] " 
