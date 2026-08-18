@@ -64,6 +64,12 @@ jobs:
             }
 
             const requestedUsername = getFormValue('Username');
+            const membershipType = getFormValue('Membership Type');
+            const membershipFileNames = {
+              User: 'users.txt',
+              Developer: 'developers.txt'
+            };
+            const membershipFileName = membershipFileNames[membershipType];
             const groups = [...new Set(
               getFormValue('Group memberships')
                 .split(/\r?\n/)
@@ -93,6 +99,9 @@ jobs:
             if (groups.length === 0) {
               validationErrors.push('At least one group membership is required.');
             }
+            if (!membershipFileName) {
+              validationErrors.push('The membership type must be User or Developer.');
+            }
 
             const membershipFiles = new Map();
             for (const group of groups) {
@@ -102,11 +111,13 @@ jobs:
               }
 
               const groupDirectory = path.join('Groups', group);
-              const membershipFile = path.join(groupDirectory, 'members.txt');
+              const membershipFile = membershipFileName
+                ? path.join(groupDirectory, membershipFileName)
+                : undefined;
               if (!fs.existsSync(groupDirectory) || !fs.statSync(groupDirectory).isDirectory()) {
                 validationErrors.push(`Group folder does not exist: ${JSON.stringify(group)}.`);
-              } else if (!fs.existsSync(membershipFile) || !fs.statSync(membershipFile).isFile()) {
-                validationErrors.push(`Membership file is missing for group: ${JSON.stringify(group)}.`);
+              } else if (membershipFile && (!fs.existsSync(membershipFile) || !fs.statSync(membershipFile).isFile())) {
+                validationErrors.push(`${membershipFileName} is missing for group: ${JSON.stringify(group)}.`);
               } else {
                 membershipFiles.set(group, membershipFile);
               }
@@ -143,7 +154,7 @@ jobs:
                 owner,
                 repo,
                 issue_number: issueNumber,
-                body: `No changes are needed. @${username} is already a member of every requested group.`
+                body: `No changes are needed. @${username} already has ${membershipType} membership in every requested group.`
               });
               await github.rest.issues.update({
                 owner,
@@ -159,6 +170,17 @@ jobs:
             const branchName = `user-request/${issueNumber}`;
             execFileSync('git', ['config', '--local', 'user.email', 'github-actions[bot]@users.noreply.github.com']);
             execFileSync('git', ['config', '--local', 'user.name', 'github-actions[bot]']);
+            try {
+              execFileSync('git', [
+                'fetch',
+                'origin',
+                `refs/heads/${branchName}:refs/remotes/origin/${branchName}`
+              ]);
+            } catch (error) {
+              if (error.status !== 128) {
+                throw error;
+              }
+            }
             execFileSync('git', ['checkout', '-B', branchName]);
 
             for (const update of pendingUpdates) {
@@ -167,12 +189,13 @@ jobs:
 
             const changedFiles = pendingUpdates.map(update => update.membershipFile);
             execFileSync('git', ['add', '--', ...changedFiles]);
-            execFileSync('git', ['commit', '-m', `Add ${username} to requested groups for #${issueNumber}`]);
+            execFileSync('git', ['commit', '-m', `Add ${username} as ${membershipType} for #${issueNumber}`]);
             execFileSync('git', ['push', '--force-with-lease', '--set-upstream', 'origin', branchName]);
 
             core.setOutput('should_create_pr', 'true');
             core.setOutput('branch_name', branchName);
             core.setOutput('username', username);
+            core.setOutput('membership_type', membershipType);
             core.setOutput('groups', JSON.stringify(pendingUpdates.map(update => update.group)));
 
       - name: Create linked pull request
@@ -181,11 +204,13 @@ jobs:
         env:
           BRANCH_NAME: ${{ steps.request.outputs.branch_name }}
           USERNAME: ${{ steps.request.outputs.username }}
+          MEMBERSHIP_TYPE: ${{ steps.request.outputs.membership_type }}
           GROUPS: ${{ steps.request.outputs.groups }}
         with:
           script: |
             const branchName = process.env.BRANCH_NAME;
             const username = process.env.USERNAME;
+            const membershipType = process.env.MEMBERSHIP_TYPE;
             const groups = JSON.parse(process.env.GROUPS);
             const owner = context.repo.owner;
             const repo = context.repo.repo;
@@ -206,10 +231,10 @@ jobs:
               const response = await github.rest.pulls.create({
                 owner,
                 repo,
-                title: `Add ${username} to requested groups`,
+                title: `Add ${username} as ${membershipType}`,
                 head: branchName,
                 base,
-                body: `Add @${username} to the following groups:\n\n${groupList}\n\nRequested by @${context.actor}.\n\nCloses #${issueNumber}`
+                body: `Add @${username} with **${membershipType}** membership to the following groups:\n\n${groupList}\n\nRequested by @${context.actor}.\n\nCloses #${issueNumber}`
               });
               pullRequest = response.data;
             }

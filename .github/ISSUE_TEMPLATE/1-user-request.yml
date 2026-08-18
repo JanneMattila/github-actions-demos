@@ -22,6 +22,16 @@ body:
     validations:
       required: true
 
+  - type: dropdown
+    id: membership_type
+    attributes:
+      label: Membership Type
+      options:
+        - User
+        - Developer
+    validations:
+      required: true
+
   - type: textarea
     id: groups
     attributes:
@@ -35,8 +45,6 @@ body:
         Group02
         Group03
         ```
-
-        You can leave this blank if the user should not be added to any groups.
 
     validations:
       required: true
