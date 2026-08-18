@@ -1,0 +1,127 @@
+name: Group membership changes
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+    paths:
+      - Groups/**/users.txt
+      - Groups/**/developers.txt
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  list-changes:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: List group membership changes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pullRequest = context.payload.pull_request;
+            const membershipPath = /^Groups\/([^/]+)\/(users|developers)\.txt$/;
+
+            const changedFiles = await github.paginate(github.rest.pulls.listFiles, {
+              owner,
+              repo,
+              pull_number: pullRequest.number,
+              per_page: 100
+            });
+
+            const membershipFiles = changedFiles
+              .map(file => ({ ...file, match: file.filename.match(membershipPath) }))
+              .filter(file => file.match);
+
+            async function readMembers(filePath, ref) {
+              try {
+                const { data } = await github.rest.repos.getContent({
+                  owner,
+                  repo,
+                  path: filePath,
+                  ref
+                });
+
+                if (Array.isArray(data) || data.type !== 'file' || !data.content) {
+                  return new Set();
+                }
+
+                const content = Buffer.from(data.content, 'base64').toString('utf8');
+                return new Set(
+                  content
+                    .split(/\r?\n/)
+                    .map(member => member.trim())
+                    .filter(Boolean)
+                );
+              } catch (error) {
+                if (error.status === 404) {
+                  return new Set();
+                }
+                throw error;
+              }
+            }
+
+            const changes = [];
+            for (const file of membershipFiles) {
+              const [, group, fileType] = file.match;
+              const membershipType = fileType === 'users' ? 'User' : 'Developer';
+              const before = await readMembers(file.filename, pullRequest.base.sha);
+              const after = await readMembers(file.filename, pullRequest.head.sha);
+
+              for (const username of after) {
+                if (!before.has(username)) {
+                  changes.push({ action: 'Added', username, group, membershipType });
+                }
+              }
+
+              for (const username of before) {
+                if (!after.has(username)) {
+                  changes.push({ action: 'Removed', username, group, membershipType });
+                }
+              }
+            }
+
+            const heading = `Group membership changes from PR #${pullRequest.number}`;
+            console.log(heading);
+            await core.summary.addHeading(heading, 2);
+
+            if (changes.length === 0) {
+              const message = 'No group membership changes were found.';
+              console.log(message);
+              await core.summary.addRaw(message).write();
+              return;
+            }
+
+            changes.sort((left, right) =>
+              left.group.localeCompare(right.group) ||
+              left.membershipType.localeCompare(right.membershipType) ||
+              left.action.localeCompare(right.action) ||
+              left.username.localeCompare(right.username)
+            );
+
+            for (const change of changes) {
+              console.log(
+                `${change.action}: ${change.username} - ${change.group} (${change.membershipType})`
+              );
+            }
+
+            await core.summary
+              .addTable([
+                [
+                  { data: 'Change', header: true },
+                  { data: 'Username', header: true },
+                  { data: 'Group', header: true },
+                  { data: 'Membership type', header: true }
+                ],
+                ...changes.map(change => [
+                  change.action,
+                  change.username,
+                  change.group,
+                  change.membershipType
+                ])
+              ])
+              .write();
