@@ -243,5 +243,5 @@ jobs:
               owner,
               repo,
               issue_number: issueNumber,
-              body: `Created pull request #${pullRequest.number}: ${pullRequest.html_url}`
+              body: `Created pull request: [${pullRequest.title}](${pullRequest.html_url})`
             });
