@@ -1,0 +1,42 @@
+name: New user request
+description: Request a new user to be added to the system
+title: "[User Request]: <username>"
+labels:
+  - github-actions
+  - add-user-request
+assignees:
+  - platform-team
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Request to add a new user to the system.
+
+  - type: input
+    id: username
+    attributes:
+      label: Username
+      description: GitHub username of the new user.
+      placeholder: johndoe
+    validations:
+      required: true
+
+  - type: textarea
+    id: groups
+    attributes:
+      label: Group memberships
+      description: |
+        List the groups the user should be a member of.
+
+        Use the following format:
+        ```
+        group1
+        group2
+        group3
+        ```
+
+        You can leave this blank if the user should not be added to any groups.
+
+    validations:
+      required: false
