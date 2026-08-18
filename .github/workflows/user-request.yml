@@ -5,20 +5,218 @@ on:
     types: [opened]
 
 permissions:
+  contents: write
   issues: write
+  pull-requests: write
+
+concurrency:
+  group: user-request-${{ github.event.issue.number }}
+  cancel-in-progress: false
 
 jobs:
-  respond:
+  process:
     if: contains(github.event.issue.labels.*.name, 'user-request')
     runs-on: ubuntu-latest
     steps:
-      - name: Add auto-response comment
+      - name: Check out
+        uses: actions/checkout@v5.0.0
+
+      - name: Validate request and update memberships
+        id: request
         uses: actions/github-script@v7
         with:
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `✅ Thanks! Platform team will review this request.`
-            })
+            const fs = require('fs');
+            const path = require('path');
+            const { execFileSync } = require('child_process');
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issueNumber = context.issue.number;
+            const issueBody = context.payload.issue.body || '';
+
+            function getFormValue(label) {
+              const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const pattern = new RegExp(
+                `###\\s+${escapedLabel}\\s*\\r?\\n+([\\s\\S]*?)(?=\\r?\\n###\\s+|$)`,
+                'i'
+              );
+              const value = issueBody.match(pattern)?.[1]?.trim() || '';
+              return value === '_No response_' ? '' : value;
+            }
+
+            async function rejectRequest(reasons) {
+              const details = reasons.map(reason => `- ${reason}`).join('\n');
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body: `This request cannot be processed:\n\n${details}\n\nPlease create a new issue with corrected information.`
+              });
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                state: 'closed',
+                state_reason: 'not_planned'
+              });
+              core.setOutput('should_create_pr', 'false');
+            }
+
+            const requestedUsername = getFormValue('Username');
+            const groups = [...new Set(
+              getFormValue('Group memberships')
+                .split(/\r?\n/)
+                .map(group => group.trim())
+                .filter(Boolean)
+            )];
+            const validationErrors = [];
+            let username;
+
+            if (!requestedUsername) {
+              validationErrors.push('The username is missing.');
+            } else {
+              try {
+                const { data: user } = await github.rest.users.getByUsername({
+                  username: requestedUsername
+                });
+                username = user.login;
+              } catch (error) {
+                if (error.status === 404) {
+                  validationErrors.push('The requested GitHub user does not exist.');
+                } else {
+                  throw error;
+                }
+              }
+            }
+
+            if (groups.length === 0) {
+              validationErrors.push('At least one group membership is required.');
+            }
+
+            const membershipFiles = new Map();
+            for (const group of groups) {
+              if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(group)) {
+                validationErrors.push(`Invalid group name: ${JSON.stringify(group)}.`);
+                continue;
+              }
+
+              const groupDirectory = path.join('Groups', group);
+              const membershipFile = path.join(groupDirectory, 'members.txt');
+              if (!fs.existsSync(groupDirectory) || !fs.statSync(groupDirectory).isDirectory()) {
+                validationErrors.push(`Group folder does not exist: ${JSON.stringify(group)}.`);
+              } else if (!fs.existsSync(membershipFile) || !fs.statSync(membershipFile).isFile()) {
+                validationErrors.push(`Membership file is missing for group: ${JSON.stringify(group)}.`);
+              } else {
+                membershipFiles.set(group, membershipFile);
+              }
+            }
+
+            if (validationErrors.length > 0) {
+              await rejectRequest(validationErrors);
+              return;
+            }
+
+            const pendingUpdates = [];
+            for (const [group, membershipFile] of membershipFiles) {
+              const currentContent = fs.readFileSync(membershipFile, 'utf8');
+              const members = currentContent
+                .split(/\r?\n/)
+                .map(member => member.trim().toLowerCase())
+                .filter(Boolean);
+
+              if (!members.includes(username.toLowerCase())) {
+                const newline = currentContent.includes('\r\n') ? '\r\n' : '\n';
+                const separator = currentContent.length > 0 && !/\r?\n$/.test(currentContent)
+                  ? newline
+                  : '';
+                pendingUpdates.push({
+                  group,
+                  membershipFile,
+                  content: `${currentContent}${separator}${username}${newline}`
+                });
+              }
+            }
+
+            if (pendingUpdates.length === 0) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body: `No changes are needed. @${username} is already a member of every requested group.`
+              });
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                state: 'closed',
+                state_reason: 'not_planned'
+              });
+              core.setOutput('should_create_pr', 'false');
+              return;
+            }
+
+            const branchName = `user-request/${issueNumber}`;
+            execFileSync('git', ['config', '--local', 'user.email', 'github-actions[bot]@users.noreply.github.com']);
+            execFileSync('git', ['config', '--local', 'user.name', 'github-actions[bot]']);
+            execFileSync('git', ['checkout', '-B', branchName]);
+
+            for (const update of pendingUpdates) {
+              fs.writeFileSync(update.membershipFile, update.content, 'utf8');
+            }
+
+            const changedFiles = pendingUpdates.map(update => update.membershipFile);
+            execFileSync('git', ['add', '--', ...changedFiles]);
+            execFileSync('git', ['commit', '-m', `Add ${username} to requested groups for #${issueNumber}`]);
+            execFileSync('git', ['push', '--force-with-lease', '--set-upstream', 'origin', branchName]);
+
+            core.setOutput('should_create_pr', 'true');
+            core.setOutput('branch_name', branchName);
+            core.setOutput('username', username);
+            core.setOutput('groups', JSON.stringify(pendingUpdates.map(update => update.group)));
+
+      - name: Create linked pull request
+        if: steps.request.outputs.should_create_pr == 'true'
+        uses: actions/github-script@v7
+        env:
+          BRANCH_NAME: ${{ steps.request.outputs.branch_name }}
+          USERNAME: ${{ steps.request.outputs.username }}
+          GROUPS: ${{ steps.request.outputs.groups }}
+        with:
+          script: |
+            const branchName = process.env.BRANCH_NAME;
+            const username = process.env.USERNAME;
+            const groups = JSON.parse(process.env.GROUPS);
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issueNumber = context.issue.number;
+            const base = context.payload.repository.default_branch;
+
+            const { data: existingPullRequests } = await github.rest.pulls.list({
+              owner,
+              repo,
+              head: `${owner}:${branchName}`,
+              base,
+              state: 'open'
+            });
+
+            let pullRequest = existingPullRequests[0];
+            if (!pullRequest) {
+              const groupList = groups.map(group => `- ${group}`).join('\n');
+              const response = await github.rest.pulls.create({
+                owner,
+                repo,
+                title: `Add ${username} to requested groups`,
+                head: branchName,
+                base,
+                body: `Add @${username} to the following groups:\n\n${groupList}\n\nRequested by @${context.actor}.\n\nCloses #${issueNumber}`
+              });
+              pullRequest = response.data;
+            }
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              body: `Created pull request #${pullRequest.number}: ${pullRequest.html_url}`
+            });

@@ -31,12 +31,12 @@ body:
 
         Use the following format:
         ```
-        group1
-        group2
-        group3
+        Group01
+        Group02
+        Group03
         ```
 
         You can leave this blank if the user should not be added to any groups.
 
     validations:
-      required: false
+      required: true
