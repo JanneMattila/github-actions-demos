@@ -1,0 +1,44 @@
+name: PostgreSQL Docker Demo
+
+on:
+  workflow_dispatch:
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+
+        env:
+          POSTGRES_USER: demo
+          POSTGRES_PASSWORD: demo123
+          POSTGRES_DB: demodb
+
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.0
+
+      - name: Build image
+        run: |
+          docker build -t postgres-demo .
+
+      - name: Run tests
+        run: |
+          docker run --rm \
+            --network host \
+            -e DB_HOST=localhost \
+            -e DB_USER=demo \
+            -e DB_PASSWORD=demo123 \
+            -e DB_NAME=demodb \
+            postgres-demo
