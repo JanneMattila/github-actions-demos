@@ -7,25 +7,6 @@ jobs:
   demo:
     runs-on: ubuntu-latest
 
-    # Native option for using a PostgreSQL service in GitHub Actions is commented out below.
-    # services:
-    #   postgres:
-    #     image: postgres:16
-
-    #     env:
-    #       POSTGRES_USER: demo
-    #       POSTGRES_PASSWORD: demo123
-    #       POSTGRES_DB: demodb
-
-    #     options: >-
-    #       --health-cmd pg_isready
-    #       --health-interval 10s
-    #       --health-timeout 5s
-    #       --health-retries 5
-
-    #     ports:
-    #       - 5432:5432
-
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.0
@@ -37,8 +18,10 @@ jobs:
       - name: Run tests
         run: |
           docker run --rm \
-            --network host \
-            -e DB_HOST=localhost \
+            -e POSTGRES_USER=demo \
+            -e POSTGRES_PASSWORD=demo123 \
+            -e POSTGRES_DB=demodb \
+            -e DB_HOST=127.0.0.1 \
             -e DB_USER=demo \
             -e DB_PASSWORD=demo123 \
             -e DB_NAME=demodb \

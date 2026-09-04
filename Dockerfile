@@ -1,13 +1,7 @@
-FROM ubuntu:24.04
-
-RUN apt-get update && \
-    apt-get install -y postgresql-client && \
-    rm -rf /var/lib/apt/lists/*
+FROM postgres:16
 
 WORKDIR /app
 
-COPY test-db.sh /app/test-db.sh
+COPY --chmod=755 test-db.sh /app/test-db.sh
 
-RUN chmod +x /app/test-db.sh
-
-CMD ["/app/test-db.sh"]
+CMD ["bash", "-c", "docker-entrypoint.sh postgres & pid=$!; /app/test-db.sh; status=$?; kill -TERM $pid; wait $pid || true; exit $status"]
